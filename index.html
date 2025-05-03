@@ -50,13 +50,70 @@
             padding: 0.5rem 0.75rem;
             border-radius: 4px;
             transition: background-color 0.3s ease, color 0.3s ease;
+            cursor: pointer;
         }
 
         nav ul li a:hover,
-        nav ul li a:focus {
+        nav ul li a:focus,
+        nav ul li a.active {
             background-color: #34495e;
             color: #1abc9c;
             outline: none;
+        }
+
+        /* Main content area */
+        main {
+            padding: 2rem;
+            min-height: 400px;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 2rem auto;
+            border-radius: 8px;
+        }
+
+        /* Login form styles */
+        .login-form {
+            max-width: 300px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .login-form label {
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            transition: border-color 0.3s ease;
+        }
+
+        .login-form input[type="text"]:focus,
+        .login-form input[type="password"]:focus {
+            border-color: #1abc9c;
+            outline: none;
+        }
+
+        .login-form button {
+            background-color: #1abc9c;
+            border: none;
+            color: white;
+            font-weight: 700;
+            padding: 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .login-form button:hover {
+            background-color: #16a085;
         }
 
         /* Responsive for mobile */
@@ -76,6 +133,11 @@
             nav ul li {
                 margin-bottom: 0.5rem;
             }
+
+            main {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
         }
     </style>
 </head>
@@ -84,15 +146,109 @@
         <h1>Main</h1>
         <nav>
             <ul>
-                <li><a href="#">Resources</a></li>
-                <li><a href="#">Defense</a></li>
-                <li><a href="#">Power</a></li>
-                <li><a href="#">More</a></li>
+                <li><a href="#" data-tab="resources" class="active">Resources</a></li>
+                <li><a href="#" data-tab="defense">Defense</a></li>
+                <li><a href="#" data-tab="power">Power</a></li>
+                <li><a href="#" data-tab="more">More</a></li>
             </ul>
         </nav>
     </header>
 
-    <main>
+    <main id="content">
+        <!-- Content will be injected here -->
     </main>
+
+    <script>
+        const tabs = document.querySelectorAll('nav ul li a');
+        const content = document.getElementById('content');
+
+        // Content for each tab
+        const tabContents = {
+            resources: '',
+            defense: '',
+            power: '',
+            more: `
+                <form class="login-form" id="loginForm">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required />
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required />
+                    <button type="submit">Login</button>
+                </form>
+                <div id="loginMessage" style="margin-top:1rem;font-weight:600;"></div>
+            `
+        };
+
+        // Function to set active tab and load content
+        function setActiveTab(tabName) {
+            tabs.forEach(t => {
+                if(t.dataset.tab === tabName) {
+                    t.classList.add('active');
+                } else {
+                    t.classList.remove('active');
+                }
+            });
+            content.innerHTML = tabContents[tabName];
+
+            if(tabName === 'more') {
+                const loginForm = document.getElementById('loginForm');
+                const loginMessage = document.getElementById('loginMessage');
+                loginForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const username = loginForm.username.value.trim();
+                    const password = loginForm.password.value;
+
+                    if(!username || !password) {
+                        loginMessage.style.color = '#e74c3c';
+                        loginMessage.textContent = 'Please enter both username and password.';
+                        return;
+                    }
+
+                    try {
+                        loginMessage.style.color = '#333';
+                        loginMessage.textContent = 'Logging in...';
+
+                        const response = await fetch('/api/login', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ username, password })
+                        });
+
+                        if(!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+
+                        const data = await response.json();
+
+                        if(data.success) {
+                            loginMessage.style.color = '#27ae60';
+                            loginMessage.textContent = 'Login successful! Welcome, ' + username + '.';
+                            loginForm.reset();
+                            // Additional logic after successful login can go here
+                        } else {
+                            loginMessage.style.color = '#e74c3c';
+                            loginMessage.textContent = data.message || 'Login failed. Please check your credentials.';
+                        }
+                    } catch (error) {
+                        loginMessage.style.color = '#e74c3c';
+                        loginMessage.textContent = 'Error during login: ' + error.message;
+                    }
+                });
+            }
+        }
+
+        // Setup event listeners on tabs
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveTab(tab.dataset.tab);
+            });
+        });
+
+        // Initialize with first tab active
+        setActiveTab('resources');
+    </script>
 </body>
 </html>
